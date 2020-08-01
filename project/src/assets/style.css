@@ -1,0 +1,29 @@
+/* 投稿フォーム用 */
+.login-form{
+  margin: 0 auto;
+  max-width: 400px;
+  padding: 1rem;
+  height: auto;
+}
+
+.inner {
+  max-width: 700px;
+  margin: 0 auto 10px;
+}
+
+.user-profile{
+  margin: 1rem 0;
+  padding: 15px;
+  color: #5989cf;
+  background: #c6e4ff;
+  border-bottom: solid 6px #aac5de;
+  border-radius: 9px;
+}
+
+.user-profile button{
+  margin: 0 0 0 5px;
+}
+
+section .user-content{
+  display: inline-block;
+}

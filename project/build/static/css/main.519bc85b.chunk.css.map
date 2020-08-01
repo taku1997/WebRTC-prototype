@@ -1,0 +1,1 @@
+{"version":3,"sources":["videoChat.css"],"names":[],"mappings":"AAAA,cACE,WAAY,CACZ,YAAa,CACb,UAAW,CACX,qBACF","file":"main.519bc85b.chunk.css","sourcesContent":[".stream video{\n  width: 240px;\n  height: 240px;\n  margin: 5px;\n  background-color: black;\n}"]}
