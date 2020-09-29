@@ -44,6 +44,7 @@ mongoose.connect(
       socket.on('join',(data) => {
         roomName = data.roomName; 
         socket.join(roomName);
+        io.sockets.emit("info", "全員に送信")
         if(data.user === trainee){
           io.to(data.id).emit('join',roomName);
         }

@@ -2,7 +2,7 @@ import  React from 'react';
 import io from 'socket.io-client';
 import '../assets/videoChat.css';
 
-class WebRTC_Trainee extends React.Component{
+class WebRTC_Trainee_head extends React.Component{
   constructor(porps) {
     super(porps);
     this.localVideoRef = React.createRef();
@@ -23,11 +23,13 @@ class WebRTC_Trainee extends React.Component{
     this.socket.on('connection-success', success => {
       console.log(success);
     })
+
     //SDPを受け取る
     this.socket.on('offerOrAnswer', (sdp) => {
       this.textref.value = JSON.stringify(sdp);
       this.pc.setRemoteDescription(new RTCSessionDescription(sdp))
     })
+    
     //経路情報を受け取る
     this.socket.on('candidate', (candidate) => {
       this.pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -135,4 +137,4 @@ class WebRTC_Trainee extends React.Component{
   }
 }
 
-export default WebRTC_Trainee;
+export default WebRTC_Trainee_head;

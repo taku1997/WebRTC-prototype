@@ -19,8 +19,12 @@ const TraineeTop = () => {
         <h1>{uid}</h1>
         <h1>{username}</h1>
         <ParimaryButton 
-          onClick={() => dispatch(push(`/trainee/${uid}`))}
-          label={"ログイン"}
+          onClick={() => dispatch(push(`/trainee/head/${uid}`))}
+          label={"Webカメラ(表情)"}
+        />
+        <ParimaryButton 
+          onClick={() => dispatch(push(`/trainee/body/${uid}`))}
+          label={"Webカメラ(姿勢)"}
         />
       </div>
     </section>

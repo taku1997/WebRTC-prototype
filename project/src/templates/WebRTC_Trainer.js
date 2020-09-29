@@ -99,10 +99,6 @@ class WebRTC_Trainer extends React.Component{
       },e => {});
   }
 
-  // setRemoteDescription = () => { 
-  //   const desc = JSON.parse(this.textref.value)
-  //   this.pc.setRemoteDescription(new RTCSessionDescription(desc))
-  // }
 
   createAnswer = () => {
     console.log('Answer');
@@ -114,10 +110,7 @@ class WebRTC_Trainer extends React.Component{
   }
   
   addCandidate = () => {
-    // const candidate = JSON.parse(this.textref.value);
-    // console.log('Adding candidate:', candidate);
-    // this.pc.addIceCandidate(new RTCIceCandidate(candidate));
-    this.candidates.forEach(candidate => {
+      this.candidates.forEach(candidate => {
       console.log(JSON.stringify(candidate));
       this.pc.addCandidate(new RTCIceCandidate(candidate));
     })
@@ -127,22 +120,23 @@ class WebRTC_Trainer extends React.Component{
     return(
       <div className="stream">
         <h1>WebRTC</h1>
-        <video 
-          ref={this.localVideoRef} 
-          autoPlay
-        />
-        <video 
-          ref={this.remoteVideoRef} 
-          autoPlay
-        />
+        <div className="webVideo">
+          <video 
+            hidden
+            ref={this.localVideoRef} 
+            autoPlay
+          />
+          <video 
+            ref={this.remoteVideoRef} 
+            autoPlay
+          />
+        </div>
         <br />
         <button onClick={this.createOffer}>Offer</button>
         <button onClick={this.createAnswer}>Answer</button>
         <br />
         <textarea ref={ref => this.textref = ref} />
         <br />
-        {/* <button onClick={this.setRemoteDescription}>Set Remote Desc</button>
-        <button onClick={this.addCandidate}>add Candidate</button> */}
       </div>
     )
   }
