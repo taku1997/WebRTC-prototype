@@ -1,7 +1,7 @@
 import { signInAction } from './actions';
 import { push } from 'connected-react-router';
 import axios from 'axios';
-const ENDPOINT = 'http://localhost:8080';
+const ENDPOINT = 'https://intense-waters-57856.herokuapp.com';
 
 //SIGNIN処理ーーーーーーーーーーーーーーーーーーー
 //role情報をSIGNINから取得

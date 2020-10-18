@@ -1,119 +1,161 @@
-import  React from 'react';
-// import { useDispatch } from 'react-redux';
+import  React, { useCallback } from 'react';
 import io from 'socket.io-client';
-// import {activeTrainee} from '../reducks/trainee/operations';
 import '../assets/videoChat.css';
+
+const ENDPOINT = 'https://intense-waters-57856.herokuapp.com';
 
 class WebRTC_Trainer extends React.Component{
   constructor(porps) {
     super(porps);
     this.localVideoRef = React.createRef();
     this.remoteVideoRef = React.createRef();
+    this.remoteVideoRef_head = React.createRef();
     this.socket = null;
-    this.candidates = [];
-  }
-
-  componentDidMount(){
-    //RTCのコネクション作成ーーーーーーーーーーーーーーーーーー
-    //const dispatch = useDispatch();
-    this.socket = io('http://localhost:8080');
-    this.socket.emit('join',{id: this.socket.id, roomName: this.props.match.params.id});
-   
-    //接続完了
-    this.socket.on('connection-success', success => {
-      console.log(success);
-    })
-
-    this.socket.on('join',join => {
-      //dispatch(activeTrainee(join));
-    }) 
-
-    //SDPを受け取る
-    this.socket.on('offerOrAnswer', (sdp) => {
-      this.textref.value = JSON.stringify(sdp);
-      this.pc.setRemoteDescription(new RTCSessionDescription(sdp))
-    })
-    //経路情報を受け取る
-    this.socket.on('candidate', (candidate) => {
-      // this.candidates = [...this.candidates, candidate ];
-      this.pc.addIceCandidate(new RTCIceCandidate(candidate));
-    })
-
-    //ーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
-    
-    const pc_config = {
+    this.peerConnections = {};
+    this.count = 0;
+    this.user = 'trainer';
+    this.pc_config = {
       "iceServers": [
         {
           urls: 'stun:stun.l.google.com:19302'
         }
       ] 
     }
+  }
 
-    this.pc = new RTCPeerConnection(pc_config);
-
-    this.pc.onicecandidate = (e) => {
-      if(e.candidate){//自分のcandidateを取集後
-        this.sendToPeer('candidate',e.candidate);
-      }
-    }
-
-    this.pc.onconnectionstatechange = (e) => {
-      console.log(e);
-    }
-
-    this.pc.onaddstream = (e) => {
-      this.remoteVideoRef.current.srcObject = e.stream;
-    }
-
+  getLocalStream = () => {
+    //getUserMedia成功時
     const success = (stream) => {
       window.localStream = stream
       this.localVideoRef.current.srcObject = stream
-      this.pc.addStream(stream)
+      this.whoisOnline()
     }
-
+    
+    //getUserMedia失敗時
     const failure = (e) => { 
       console.log('getUserMedia Error:', e)
     }
 
+    //getUserMedia実行
     const constrains = { video: true };
     navigator.mediaDevices.getUserMedia(constrains)
       .then(success)
       .catch(failure);
   }
 
-  //WebSocketサーバーに送信
-  sendToPeer = (messageType, payload) => {
-    this.socket.emit(messageType, {
-      socketID: this.socket.id,
-      payload
-    })
+  //すでにOnline済みの人へsocketID送信
+  whoisOnline = () => {
+    this.sendToPeer('onlinePeers',null, 
+      {local: this.socket.id, user: this.user})
   }
 
-  //オファーの作成
-  createOffer = () => {
-    console.log('Offer');
-    this.pc.createOffer({offerToReceiveVideo: 1})
-      .then(sdp => {
-        this.pc.setLocalDescription(sdp);
-        this.sendToPeer('offerOrAnswer',sdp);
-      },e => {});
+  //WebSocket(Node.JS)サーバーに送信
+  sendToPeer = (messageType, payload, socketID) => {
+    this.socket.emit(messageType, {socketID,payload})
   }
 
-
-  createAnswer = () => {
-    console.log('Answer');
-    this.pc.createAnswer({offerToReceiveVideo: 1})
-    .then(sdp => {
-      this.pc.setLocalDescription(sdp)  
-      this.sendToPeer('offerOrAnswer', sdp)
-    },e => {});
-  }
+  createPeerConnection = (socketID,callback) => {
+    try {  
+      let pc = new RTCPeerConnection(this.pc_config);
+      this.peerConnections = {...this.peerConnections, [socketID]: pc};
+      
+      //自分のcandidateを取集後
+      pc.onicecandidate = (e) => {
+        if(e.candidate){
+          this.sendToPeer('candidate',e.candidate,{
+            local: this.socket.id,
+            remote: socketID
+          });
+        }
+      }
   
-  addCandidate = () => {
-      this.candidates.forEach(candidate => {
-      console.log(JSON.stringify(candidate));
-      this.pc.addCandidate(new RTCIceCandidate(candidate));
+      //ICEのステータスが変更になった時
+      pc.onconnectionstatechange = (e) => {
+        console.log(e);
+      }
+
+      //相手の映像/音声がSDP内に含まれていた場合
+      pc.onaddstream = (e) => {
+        if (this.count % 2 === 0){
+          this.remoteVideoRef.current.srcObject = e.stream;
+        }else{
+          this.remoteVideoRef_head.current.srcObject = e.stream;
+        }
+        this.count += 1; 
+      }
+
+      pc.addStream(this.localVideoRef.current.srcObject)
+      callback(pc)
+
+    } catch(e) {
+      callback(null);
+      console.log(e);
+      console.log("間違え")
+    }
+  }
+
+
+  componentDidMount(){
+    this.socket = io(ENDPOINT);
+    this.socket.emit('join',{id: this.socket.id, user:this.user ,roomName: this.props.match.params.id});
+   
+    //接続完了
+    this.socket.on('connection-success', success => {
+      this.getLocalStream();
     })
+
+    //すでにOnlineのユーザからのSocketIDを受け取り，Offerを送信する
+    this.socket.on('online-peer',socketID => {
+      this.createPeerConnection(socketID,pc => {
+        if(pc)
+          pc.createOffer({offerToReceiveVideo: 1})
+            .then(sdp => {
+              pc.setLocalDescription(sdp)
+              this.sendToPeer('offer',sdp,{
+                local: this.socket.id,
+                remote: socketID
+              })
+            })
+      })
+    })
+
+    //Offerを受け取り,Answerを送信する
+    this.socket.on('offer',data => {
+      this.createPeerConnection(data.socketID,pc => {
+        pc.addStream(this.localVideoRef.current.srcObject)
+
+        pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(() => {
+          pc.createAnswer({offerToReceiveVideo: 1})
+            .then(sdp => {
+              pc.setLocalDescription(sdp)
+              this.sendToPeer('answer', sdp, {
+                local: this.socket.id,
+                remote: data.socketID,
+                user: this.user
+              })
+            })
+        })
+      })
+    })
+
+    //Answerを受け取り,SDPを保存する
+    this.socket.on('answer', data => {
+      const pc = this.peerConnections[data.socketID];
+      console.log(data.sdp);
+      pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
+    })
+
+
+    //経路情報を受け取る
+    this.socket.on('candidate', (data) => {
+      // this.candidates = [...this.candidates, candidate ];
+      const pc = this.peerConnections[data.socketID];
+      if(pc){
+        pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      }
+    })
+
+    //ーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
   }
 
   render(){
@@ -130,12 +172,11 @@ class WebRTC_Trainer extends React.Component{
             ref={this.remoteVideoRef} 
             autoPlay
           />
+          <video 
+            ref={this.remoteVideoRef_head} 
+            autoPlay
+          />
         </div>
-        <br />
-        <button onClick={this.createOffer}>Offer</button>
-        <button onClick={this.createAnswer}>Answer</button>
-        <br />
-        <textarea ref={ref => this.textref = ref} />
         <br />
       </div>
     )

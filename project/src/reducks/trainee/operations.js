@@ -1,6 +1,6 @@
 import axios from 'axios';
 import {fetchTraineesAction,fetchTrainersAction} from './actions';
-const ENDPOINT = 'http://localhost:8080';
+const ENDPOINT = 'https://intense-waters-57856.herokuapp.com';
 
 export const fetchTrainee = () => {
   return async(dispatch) => {
