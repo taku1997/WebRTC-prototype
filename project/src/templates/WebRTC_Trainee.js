@@ -1,14 +1,35 @@
 import  React from 'react';
 import io from 'socket.io-client';
 import '../assets/videoChat.css';
+import Video from '../components/Videoo/video';
+import Videos from '../components/Videoo/videos';
 
-const ENDPOINT = 'https://intense-waters-57856.herokuapp.com';
+const ENDPOINT = 'http://localhost:8080'
+// const ENDPOINT = 'https://intense-waters-57856.herokuapp.com';
 
 class WebRTC_Trainee extends React.Component{
   constructor(porps) {
+
     super(porps);
-    this.localVideoRef = React.createRef();
-    this.remoteVideoRef = React.createRef();
+    this.state = {
+      localStream: null,
+      remoteStream: null,
+
+      remoteStreams: [],
+      peerConnections: {},
+      selectedVideo: null,
+
+      stauts: 'Please wait ...',
+
+      sdpConstraints: {
+        'mandatory': {
+          'OfferToReceiveAudio': true,
+          'OfferToReceiveVideo': true
+        }
+      }
+    }
+    // this.localVideoRef = React.createRef();
+    // this.remoteVideoRef = React.createRef();
     this.socket = null;
     this.peerConnection = null;
     this.candidates = [];
@@ -25,7 +46,9 @@ class WebRTC_Trainee extends React.Component{
   getLocalStream = () => {
     const success = (stream) => {
       window.localStream = stream
-      this.localVideoRef.current.srcObject = stream
+      this.setState({
+        localStream: stream
+      })
       this.whoisOnline()
     }
 
@@ -56,7 +79,10 @@ class WebRTC_Trainee extends React.Component{
   createPeerConnection = (socketID,callback) => {
     try {  
       let pc = new RTCPeerConnection(this.pc_config);
-      this.peerConnection = pc;
+      const peerConnections = { ...this.state.peerConnections, [socketID]: pc }
+      this.setState({
+        peerConnections
+      })
       
       pc.onicecandidate = (e) => {
         if(e.candidate){//自分のcandidateを取集後
@@ -71,11 +97,30 @@ class WebRTC_Trainee extends React.Component{
         console.log(e);
       }
   
-      pc.onaddstream = (e) => {
-        this.remoteVideoRef.current.srcObject = e.stream;
+      pc.ontrack = (e) => {
+        const remoteVideo = {
+          id: socketID,
+          name: socketID,
+          stream: e.streams[0]
+        }
+
+        this.setState(prevState => {
+          const remoteStream = prevState.remoteStreams.length > 0 ? {} : { remoteStream: e.streams[0] }
+          let selectedVideo = prevState.remoteStreams.filter(stream => stream.id === prevState.selectedVideo.id)
+          selectedVideo = selectedVideo.length ? {} : { selectedVideo: remoteVideo }
+
+
+          return {
+            ...selectedVideo,
+            ...remoteStream,
+            remoteStreams: [...prevState.remoteStreams, remoteVideo]
+          }
+        })
       }
 
-      pc.addStream(this.localVideoRef.current.srcObject)
+      if(this.state.localStream){
+        pc.addStream(this.state.localStream)
+      }
       callback(pc)
 
     } catch(e) {
@@ -99,7 +144,7 @@ class WebRTC_Trainee extends React.Component{
     this.socket.on('online-peer',socketID => {
       this.createPeerConnection(socketID,pc => {
         if(pc)
-          pc.createOffer({offerToReceiveVideo: 1})
+          pc.createOffer(this.state.sdpConstraints)
             .then(sdp => {
               pc.setLocalDescription(sdp)
               this.sendToPeer('offer',sdp,{
@@ -112,10 +157,10 @@ class WebRTC_Trainee extends React.Component{
 
     this.socket.on('offer',data => {
       this.createPeerConnection(data.socketID,pc => {
-        pc.addStream(this.localVideoRef.current.srcObject)
+        pc.addStream(this.state.localStream)
 
         pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(() => {
-          pc.createAnswer({offerToReceiveVideo: 1})
+          pc.createAnswer(this.state.sdpConstraints)
             .then(sdp => {
               pc.setLocalDescription(sdp)
               this.sendToPeer('answer', sdp, {
@@ -129,7 +174,7 @@ class WebRTC_Trainee extends React.Component{
     })
 
     this.socket.on('answer', data => {
-      const pc = this.peerConnection;
+      const pc = this.state.peerConnections[data.socketID];
       console.log(data.sdp);
       pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
     })
@@ -145,7 +190,7 @@ class WebRTC_Trainee extends React.Component{
     //経路情報を受け取る
     this.socket.on('candidate', (data) => {
       // this.candidates = [...this.candidates, candidate ];
-      const pc = this.peerConnection;
+      const pc = this.state.peerConnections[data.socketID];
       if(pc){
         pc.addIceCandidate(new RTCIceCandidate(data.candidate));
       }
@@ -153,22 +198,47 @@ class WebRTC_Trainee extends React.Component{
 
     //ーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
   }
+  switchVideo = (_video) => {
+    console.log(_video)
+    this.setState({
+      selectedVideo: _video
+    })
+  }
 
   render(){
     return(
       <div className="stream">
-        <h1>WebRTC</h1>
         <div className="webVideo">
-          <video 
-            hidden
-            ref={this.localVideoRef} 
-            autoPlay
+          <Video
+            videoStyles={{
+              zIndex: 2,
+              position: 'absolute',
+              right: 0,
+              width: 200,
+              height: 200,
+              backgroundColor: 'black'
+            }}
+            videoStream={this.state.localStream}
           />
-          <video 
-            ref={this.remoteVideoRef} 
-            autoPlay
+          <Video 
+            videoStyles={{
+              zIndex:1,
+              position: 'fixed',
+              marignTop: 65,
+              marign: 5,
+              bottom: 0,
+              minWidth: '100%',
+              minHeight: '80%',
+              backgroundColor: 'black'
+
+            }}
+            videoStream={this.state.selectedVideo && this.state.selectedVideo.stream} 
           />
         </div>
+        <Videos
+          switchVideo={this.switchVideo}
+          remoteStreams={this.state.remoteStreams}
+        ></Videos>
         <br />
       </div>
     )

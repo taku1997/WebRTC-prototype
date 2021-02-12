@@ -16,7 +16,7 @@ const ProductCard = ({name,uid}) => {
         <span>{name}</span>
       </div>
       <div className="user_child"><ParimaryButton
-        onClick={() => dispatch(push(`/trainer/${uid}`))}
+        onClick={() => dispatch(push(`/trainee/${uid}`))}
         label={"テレビ電話"}
       />
         </div>

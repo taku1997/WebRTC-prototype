@@ -1,7 +1,9 @@
 import axios from 'axios';
 import {fetchTraineesAction,fetchTrainersAction} from './actions';
-const ENDPOINT = 'https://intense-waters-57856.herokuapp.com';
+//const ENDPOINT = 'https://intense-waters-57856.herokuapp.com';
+const ENDPOINT = 'http://localhost:8080'
 
+//トレーニーの情報を取得
 export const fetchTrainee = () => {
   return async(dispatch) => {
     try{
@@ -16,6 +18,7 @@ export const fetchTrainee = () => {
   }
 }
 
+//トレーナーの情報を取得
 export const fetchTrainer = () => {
   return async(dispatch) => { 
     try {

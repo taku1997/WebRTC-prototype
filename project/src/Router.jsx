@@ -14,8 +14,8 @@ const Router = () => {
       <Route exact path={"/trainee"} component={TraineeTop}/>
       {/* 通信部分 */}
       <Route exact path={"/trainer/:id"} component={WebRTC_Trainer}/>
-      <Route exact path={"/trainee/head/:id"} component={WebRTC_Trainee_head}/>
-      <Route exact path={"/trainee/body/:id"} component={WebRTC_Trainee}/>
+      <Route exact path={"/trainee/:id"} component={WebRTC_Trainee}/>
+      {/* <Route exact path={"/trainee/body/:id"} component={WebRTC_Trainee}/> */}
       {/* <Route exact path={"(/)?"} component={Home}/> */}
       <Route exact path={"(/)?"} component={Home}/>
     </Switch>

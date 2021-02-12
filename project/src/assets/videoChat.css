@@ -2,7 +2,7 @@
   display: flex;
 } */
 
-.stream video{
+/* .stream video{
   width: 650px;
   height: 500px;
   margin: 2px;
@@ -11,10 +11,10 @@
 
 .stream h1{
   text-align: center;
-}
+} */
 
-.stream .webVideo{
+/* .stream .webVideo{
   display: flex;
   justify-content: space-around;
-}
+} */
 

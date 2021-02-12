@@ -1,13 +1,17 @@
 import  React from 'react';
 import io from 'socket.io-client';
 import '../assets/videoChat.css';
+import Video from '../components/Videoo/video';
+
 
 const ENDPOINT = 'https://intense-waters-57856.herokuapp.com';
-
 class WebRTC_Trainee_head extends React.Component{
   constructor(porps) {
     super(porps);
-    this.localVideoRef = React.createRef();
+    this.state = {
+      localStream: null,
+    }
+    // this.localVideoRef = React.createRef();
     this.remoteVideoRef = React.createRef();
     this.socket = null;
     this.peerConnection = null;
@@ -25,7 +29,9 @@ class WebRTC_Trainee_head extends React.Component{
   getLocalStream = () => {
     const success = (stream) => {
       window.localStream = stream
-      this.localVideoRef.current.srcObject = stream
+      this.setState({
+        localStream: stream
+      })
       this.whoisOnline()
     }
 
@@ -155,18 +161,35 @@ class WebRTC_Trainee_head extends React.Component{
   }
 
   render(){
+    console.log((this.state.l))
+
     return(
       <div className="stream">
         <h1>WebRTC</h1>
         <div className="webVideo">
-          <video 
-            hidden
-            ref={this.localVideoRef} 
-            autoPlay
+          <Video
+            videoStyles={{
+              zIndex: 2,
+              position: 'fixed',
+              right: 0,
+              width: 200,
+              height: 200,
+              margin: 5,
+              backgroundColor: 'black'
+            }}
+            // ref={this.localVideoRef} 
+            videoStream={this.state.localStream}
           />
-          <video 
-            ref={this.remoteVideoRef} 
-            autoPlay
+          <Video 
+            videoStyles={{
+              zIndex:1,
+              position: 'fixed',
+              bottom: 0,
+              minWidth: '100%',
+              minHeight: '100%',
+              backgroundColor: 'black'
+            }}
+            videoStream={this.state.remoteStream}
           />
         </div>
         <br />
