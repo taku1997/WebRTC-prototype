@@ -80,9 +80,7 @@ class WebRTC_Trainee extends React.Component{
     try {  
       let pc = new RTCPeerConnection(this.pc_config);
       const peerConnections = { ...this.state.peerConnections, [socketID]: pc }
-      this.setState({
-        peerConnections
-      })
+      this.setState({peerConnections})
       
       pc.onicecandidate = (e) => {
         if(e.candidate){//自分のcandidateを取集後
@@ -109,7 +107,6 @@ class WebRTC_Trainee extends React.Component{
           let selectedVideo = prevState.remoteStreams.filter(stream => stream.id === prevState.selectedVideo.id)
           selectedVideo = selectedVideo.length ? {} : { selectedVideo: remoteVideo }
 
-
           return {
             ...selectedVideo,
             ...remoteStream,
@@ -118,7 +115,9 @@ class WebRTC_Trainee extends React.Component{
         })
       }
 
+      //修正箇所
       if(this.state.localStream){
+        // pc.addTrack(this.state.localStream.getVideoTracks()[0],this.state.localStream)
         pc.addStream(this.state.localStream)
       }
       callback(pc)
@@ -141,6 +140,18 @@ class WebRTC_Trainee extends React.Component{
       this.getLocalStream();
     })
 
+
+    this.socket.on('peer-disconnect',data => {
+      const remoteStreams = this.state.remoteStreams.filter(stream => stream.id !== data.socketID)
+      this.setState(prevState => {
+        const selectedVideo = prevState.selectedVideo.id === data.socketID && remoteStreams.length ? { selectedVideo: remoteStreams[0] } : null
+        return {
+          remoteStreams,
+          ...selectedVideo,
+        }
+      })
+    })
+
     this.socket.on('online-peer',socketID => {
       this.createPeerConnection(socketID,pc => {
         if(pc)
@@ -157,8 +168,8 @@ class WebRTC_Trainee extends React.Component{
 
     this.socket.on('offer',data => {
       this.createPeerConnection(data.socketID,pc => {
+        // pc.addTrack(this.state.localStream.getVideoTracks()[0],this.state.localStream)
         pc.addStream(this.state.localStream)
-
         pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(() => {
           pc.createAnswer(this.state.sdpConstraints)
             .then(sdp => {
@@ -166,7 +177,6 @@ class WebRTC_Trainee extends React.Component{
               this.sendToPeer('answer', sdp, {
                 local: this.socket.id,
                 remote: data.socketID,
-                user: this.user
               })
             })
         })
@@ -175,7 +185,6 @@ class WebRTC_Trainee extends React.Component{
 
     this.socket.on('answer', data => {
       const pc = this.state.peerConnections[data.socketID];
-      console.log(data.sdp);
       pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
     })
 

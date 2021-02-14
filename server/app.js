@@ -40,7 +40,6 @@ mongoose.connect(
     //Socketサーバー接続時
     io.on('connection', socket => {
       socket.emit('connection-success',{success: socket.id})
-      console.log('ee')
       let roomName;
 
       socket.on('join',(data) => {
@@ -48,23 +47,22 @@ mongoose.connect(
         socket.join(roomName);
         connectedPeers.set(socket.id, {socket: socket, user:data.user} );
         io.sockets.emit("info", "全員に送信")
-        // if(data.user === trainee){
-        //   io.to(data.id).emit('join',roomName);
-        // }
       });
 
       //コネクションが切れた時
       socket.on('disconnect',() => {
         console.log('disconnected');
         connectedPeers.delete(socket.id);
+        socket.broadcast.emit('peer-disconnect',{
+          socketID: socket.id
+        })
       });
 
       //誰かが入手してきた時の受け取り
       socket.on('onlinePeers', (data) => {
         for (const [socketID, _socket] of connectedPeers.entries()) {
-          //console.log(socketID);
           if (socketID !== data.socketID.local) {
-            console.log('online-peer',data.socketID,socketID);
+            // console.log('online-peer',data.socketID,socketID);
             socket.emit('online-peer', socketID)
           }
         }

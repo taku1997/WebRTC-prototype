@@ -21,7 +21,7 @@ const TrainerTop = () => {
       <div className="inner">
       <ParimaryButton 
           onClick={() => dispatch(push(`/trainer/${uid}`))}
-          label={"表情"}
+          label={"トレーナー"}
       />
       </div>
     </section>
