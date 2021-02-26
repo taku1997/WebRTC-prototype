@@ -14,16 +14,20 @@ class Videos extends Component {
   componentWillReceiveProps(nextProps) {
     if (this.props.remoteStreams !== nextProps.remoteStreams) {
       let _rVideos = nextProps.remoteStreams.map((rVideo, index) => {
-        let video = <Video
-          videoStream={rVideo.stream}
-          frameStyle={{ width: 300, float: 'left', padding: '0 3px' }}
-          videoStyles={{
-            cursor: 'pointer',
-            objectFit: 'cover',
-            borderRadius: 3,
-            width: '100%',
-          }}
-        />
+        const _videoTrack =  rVideo.stream.getTracks().filter(track => track.kind === "video")
+        let video = _videoTrack && (
+          <Video
+            videoStream={rVideo.stream}
+            frameStyle={{ width: 300, float: 'left', padding: '0 3px' }}
+            videoStyles={{
+              cursor: 'pointer',
+              objectFit: 'cover',
+              borderRadius: 3,
+              width: '100%',
+            }}
+            autoplay
+          />
+        ) || <div></div>
 
         return (
           <div

@@ -45,6 +45,7 @@ mongoose.connect(
       socket.on('join',(data) => {
         roomName = data.roomName; 
         socket.join(roomName);
+        console.log(socket.id);
         connectedPeers.set(socket.id, {socket: socket, user:data.user} );
         io.sockets.emit("info", "全員に送信")
       });

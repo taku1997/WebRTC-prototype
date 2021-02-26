@@ -1,6 +1,7 @@
 import  React from 'react';
 import io from 'socket.io-client';
 import '../assets/videoChat.css';
+import Chat from '../components/Chat/Chat';
 import Video from '../components/Videoo/video';
 import Videos from '../components/Videoo/videos';
 
@@ -24,12 +25,13 @@ class WebRTC_Trainee extends React.Component{
       sdpConstraints: {
         'mandatory': {
           'OfferToReceiveAudio': true,
-          'OfferToReceiveVideo': true
+          'OfferToReceiveVideo': true,
         }
-      }
+      },
+      messages: [],
+      dataChannels: [],
     }
-    // this.localVideoRef = React.createRef();
-    // this.remoteVideoRef = React.createRef();
+
     this.socket = null;
     this.peerConnection = null;
     this.candidates = [];
@@ -56,7 +58,7 @@ class WebRTC_Trainee extends React.Component{
       console.log('getUserMedia Error:', e)
     }
 
-    const constrains = { video: true };
+    const constrains = { video: true, audio: true };
     navigator.mediaDevices.getUserMedia(constrains)
       .then(success)
       .catch(failure);
@@ -96,36 +98,55 @@ class WebRTC_Trainee extends React.Component{
       }
   
       pc.ontrack = (e) => {
-        const remoteVideo = {
-          id: socketID,
-          name: socketID,
-          stream: e.streams[0]
+        let _remoteStream = null;
+        let remoteStreams = this.state.remoteStreams; 
+        let remoteVideo = {};
+
+        const rVideos = this.state.remoteStreams.filter(stream => stream.id === socketID)
+        if(rVideos.length){
+          _remoteStream = rVideos[0].stream;
+          _remoteStream.addTrack(e.track,_remoteStream);
+          remoteVideo = {
+            ...rVideos[0],
+            stream: _remoteStream,
+          }
+          remoteStreams = this.state.remoteStreams.map(_remoteVideo => {
+            return _remoteVideo.id === remoteVideo.id && remoteVideo || _remoteVideo
+          })
+        }else{
+          _remoteStream = new MediaStream();
+          _remoteStream.addTrack(e.track, _remoteStream);
+          remoteVideo = {
+            id: socketID,
+            name: socketID,
+            stream: _remoteStream
+          }
+          remoteStreams = [...this.state.remoteStreams, remoteVideo]
         }
 
         this.setState(prevState => {
-          const remoteStream = prevState.remoteStreams.length > 0 ? {} : { remoteStream: e.streams[0] }
+          // const remoteStream = prevState.remoteStreams.length > 0 ? {} : { remoteStream: e.streams[0] }
+          const remoteStream = prevState.remoteStreams.length > 0 ? {} : { remoteStream: _remoteStream }
           let selectedVideo = prevState.remoteStreams.filter(stream => stream.id === prevState.selectedVideo.id)
           selectedVideo = selectedVideo.length ? {} : { selectedVideo: remoteVideo }
-
           return {
             ...selectedVideo,
             ...remoteStream,
-            remoteStreams: [...prevState.remoteStreams, remoteVideo]
+            remoteStreams,
           }
         })
       }
-
       //修正箇所
+      // pc.addTrack(this.state.localStream.getVideoTracks()[0],this.state.localStream)
       if(this.state.localStream){
-        // pc.addTrack(this.state.localStream.getVideoTracks()[0],this.state.localStream)
-        pc.addStream(this.state.localStream)
+        this.state.localStream.getTracks().forEach(track => {
+          pc.addTrack(track,this.state.localStream)
+        })
       }
       callback(pc)
-
     } catch(e) {
       callback(null);
       console.log(e);
-      console.log("間違え")
     }
   }
 
@@ -140,7 +161,6 @@ class WebRTC_Trainee extends React.Component{
       this.getLocalStream();
     })
 
-
     this.socket.on('peer-disconnect',data => {
       const remoteStreams = this.state.remoteStreams.filter(stream => stream.id !== data.socketID)
       this.setState(prevState => {
@@ -154,7 +174,36 @@ class WebRTC_Trainee extends React.Component{
 
     this.socket.on('online-peer',socketID => {
       this.createPeerConnection(socketID,pc => {
-        if(pc)
+        if(pc){
+
+          //Chat機能
+          const dataChannel = pc.createDataChannel('dataChannel')          
+          
+          const handleReceiveMessage = (event) => {
+            const message = JSON.parse(event.data)
+            console.log(message)
+            this.setState(prevState => {
+              return {
+                messages: [...prevState.messages, message]
+              }
+            })
+          }
+  
+          const receiveChannelCallback = (event) => {
+            const receiveChannel = event.channel
+            receiveChannel.onmessage = handleReceiveMessage
+          }
+  
+          pc.ondatachannel = receiveChannelCallback;
+  
+
+          this.setState(prevState => {
+            return {
+              dataChannels: [...prevState.dataChannels, dataChannel]
+            }
+          })
+
+
           pc.createOffer(this.state.sdpConstraints)
             .then(sdp => {
               pc.setLocalDescription(sdp)
@@ -163,13 +212,41 @@ class WebRTC_Trainee extends React.Component{
                 remote: socketID
               })
             })
+          }
       })
     })
 
     this.socket.on('offer',data => {
       this.createPeerConnection(data.socketID,pc => {
-        // pc.addTrack(this.state.localStream.getVideoTracks()[0],this.state.localStream)
         pc.addStream(this.state.localStream)
+        // pc.addTrack(this.state.localStream.getVideoTracks()[0],this.state.localStream)
+
+        const dataChannel = pc.createDataChannel('dataChannel')
+       
+        const handleReceiveMessage = (event) => {
+          const message = JSON.parse(event.data)
+          console.log(message)
+          this.setState(prevState => {
+            return {
+              messages: [...prevState.messages, message]
+            }
+          })
+        }
+
+        const receiveChannelCallback = (event) => {
+          const receiveChannel = event.channel
+          receiveChannel.onmessage = handleReceiveMessage
+        }
+
+        pc.ondatachannel = receiveChannelCallback;
+
+
+        this.setState(prevState => {
+          return {
+            dataChannels: [...prevState.dataChannels, dataChannel]
+          }
+        })
+        
         pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(() => {
           pc.createAnswer(this.state.sdpConstraints)
             .then(sdp => {
@@ -187,14 +264,6 @@ class WebRTC_Trainee extends React.Component{
       const pc = this.state.peerConnections[data.socketID];
       pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
     })
-
-
-    //SDPを受け取る
-    // this.socket.on('offerOrAnswer', (sdp) => {
-    //   const pc = this.peerConnection;
-    //   this.textref.value = JSON.stringify(sdp);
-    //   pc.setRemoteDescription(new RTCSessionDescription(sdp))
-    // })
 
     //経路情報を受け取る
     this.socket.on('candidate', (data) => {
@@ -218,17 +287,25 @@ class WebRTC_Trainee extends React.Component{
     return(
       <div className="stream">
         <div className="webVideo">
-          <Video
-            videoStyles={{
-              zIndex: 2,
-              position: 'absolute',
-              right: 0,
-              width: 200,
-              height: 200,
-              backgroundColor: 'black'
-            }}
-            videoStream={this.state.localStream}
-          />
+          <div style={{
+            zIndex:101,
+            position: 'absolute',
+            right: 0,
+          }}>
+            <Video
+              videoStyles={{
+                width: 200,
+              }}
+              frameStyle = {{
+                width:200,
+                marign: 5,
+                borderRadius: 5,
+                backgroundColor: 'black',
+              }}
+              showMuteControls={true} 
+              videoStream={this.state.localStream}
+            />
+          </div>
           <Video 
             videoStyles={{
               zIndex:1,
@@ -239,7 +316,6 @@ class WebRTC_Trainee extends React.Component{
               minWidth: '100%',
               minHeight: '80%',
               backgroundColor: 'black'
-
             }}
             videoStream={this.state.selectedVideo && this.state.selectedVideo.stream} 
           />
@@ -249,6 +325,18 @@ class WebRTC_Trainee extends React.Component{
           remoteStreams={this.state.remoteStreams}
         ></Videos>
         <br />
+        <Chat
+          user={{uid: this.socket && this.socket.id || ''}}
+          messages={this.state.messages}
+          sendMessage={(message) => {
+            this.setState(prevState => {
+              return {messages: [...prevState.messages, message]}
+            })
+            this.state.dataChannels.map(sendChannel => {
+              sendChannel.readyState === 'open' && sendChannel.send(JSON.stringify(message))
+            })
+          }}
+        />
       </div>
     )
   }
