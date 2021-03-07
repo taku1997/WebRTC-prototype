@@ -58,6 +58,9 @@ class WebRTC_Trainer extends React.Component{
     navigator.mediaDevices.getUserMedia(constrains)
       .then(success)
       .catch(failure);
+    navigator.mediaDevices.getDisplayMedia(constrains)
+      .then(successDisplay)
+      .catch(failure);
   }
 
   //オンライン状態のユーザを
