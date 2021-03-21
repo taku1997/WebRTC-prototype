@@ -1,9 +1,16 @@
 import React from 'react';
 import Router from './Router';
+import { Header } from './components/Header';
+import './assets/style.css'
 
 const App = () => {
   return (
-    <Router />
+    <>
+      {/* <Header />
+      <main className="c-main"> */}
+        <Router />  
+      {/* </main> */}
+    </>
   )
 }
 

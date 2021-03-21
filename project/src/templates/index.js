@@ -5,3 +5,4 @@ export {default as SignUp} from './SignUp';
 export {default as SignIn} from './SignIn';
 export {default as WebRTC_Trainer} from './WebRTC_Trainer';
 export {default as WebRTC_Trainee} from './WebRTC_Trainee';
+export {default as WebRTC_Trainee_head} from './WebRTC_Trainee_head';
