@@ -153,7 +153,6 @@ class WebRTC_Trainer extends React.Component{
       const peerConnections = { ...this.state.peerConnections, [socketID]: this.pc }
       this.setState({peerConnections})
       
-      //自分のcandidateを取集後
       this.pc.onicecandidate = (e) => {
         if(e.candidate){
           this.sendToPeer('candidate',e.candidate,{
