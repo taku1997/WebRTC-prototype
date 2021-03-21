@@ -325,7 +325,6 @@ class WebRTC_Trainer extends React.Component{
                 marign: 20,
                 backgroundColor: 'black'
               }}
-              // ref={this.localVideoRef} 
               videoStream={this.state.localStream}
             />
             <Video
@@ -335,7 +334,6 @@ class WebRTC_Trainer extends React.Component{
                 marign: 20,
                 backgroundColor: 'black'
               }}
-              // ref={this.localVideoRef} 
               videoStream={this.state.remoteStreams[0] && this.state.remoteStreams[0].stream}
             />
             <Video
@@ -345,7 +343,6 @@ class WebRTC_Trainer extends React.Component{
                 marign: 20,
                 backgroundColor: 'black'
               }}
-              // ref={this.localVideoRef} 
               videoStream={this.state.remoteStreams[1] && this.state.remoteStreams[1].stream}
             />
             <Video
@@ -355,7 +352,6 @@ class WebRTC_Trainer extends React.Component{
                 marign: 20,
                 backgroundColor: 'black'
               }}
-              // ref={this.localVideoRef} 
               videoStream={this.state.remoteStreams[2] && this.state.remoteStreams[2].stream}
             />
           </div>
