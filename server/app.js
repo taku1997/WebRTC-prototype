@@ -5,6 +5,7 @@ const helmet = require('helmet');
 
 const authRoutes = require('./router/auth');
 const userRoutes = require('./router/user');
+const videoRoutes = require('./router/video');
 const trainee = require('./models/trainee');
 
 const app = express();
@@ -63,7 +64,6 @@ mongoose.connect(
       socket.on('onlinePeers', (data) => {
         for (const [socketID, _socket] of connectedPeers.entries()) {
           if (socketID !== data.socketID.local) {
-            // console.log('online-peer',data.socketID,socketID);
             socket.emit('online-peer', socketID)
           }
         }
@@ -93,10 +93,27 @@ mongoose.connect(
         }
       })
 
-      //OfferもしくはAnswerを受けた場合に，全部の
-      // socket.on('offerOrAnswer',(data) => {
-      //   socket.broadcast.to(roomName).emit('offerOrAnswer', data.payload);
-      // })
+      socket.on('offerDisplay',data => {
+        for (const [socketID, {socket,user}] of connectedPeers.entries()) {
+          if (socketID !== data.socketID.local) {
+            socket.emit('offer-display',{
+              sdp: data.payload,
+              socketID: data.socketID.local
+            })
+          }
+        }
+      })
+
+      socket.on('answerDisplay',data => {
+        for (const [socketID, {socket}] of connectedPeers.entries()) {
+          if(socketID === data.socketID.remote){
+            socket.emit('answer-display',{
+              sdp: data.payload,
+              socketID: data.socketID.local
+            })
+          }
+        }
+      })
 
       //candidateイベントが発生した時
       socket.on('candidate', (data) => {

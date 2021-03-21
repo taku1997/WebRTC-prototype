@@ -40,7 +40,6 @@ exports.postSignin = (req,res,next) => {
       return bcrypt.compare(password, user.password);
     }).then(isEqual => {
       if(!isEqual){
-        //ログインエラー処理
         return false;
       }
       //JWTもあとで

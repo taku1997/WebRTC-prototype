@@ -6,10 +6,10 @@ import './assets/style.css'
 const App = () => {
   return (
     <>
-      <Header />
-      <main className="c-main">
+      {/* <Header />
+      <main className="c-main"> */}
         <Router />  
-      </main>
+      {/* </main> */}
     </>
   )
 }
